@@ -109,3 +109,6 @@ venv.bak/
 
 # venv
 venv/
+
+# Custom Ignores
+data/
