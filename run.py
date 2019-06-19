@@ -1,4 +1,4 @@
-from piano_vision.piano_finder import main
+from piano_vision.main import main
 
 
 if __name__ == '__main__':
