@@ -33,11 +33,10 @@ class PianoVision:
 			# Loop through remaining frames
 			while frame is not None:
 				keyboard = self.bounder.get_bounded_section(frame, self.bounds)
+				cv2.imshow('keyboard', keyboard)
 
 				cv2.rectangle(frame, self.bounds[0], self.bounds[3], (0, 255, 255), thickness=2)
-
 				cv2.imshow('frame', frame)
-				cv2.imshow('keyboard', keyboard)
 
 				for processor in processors:
 					processor.process_frame(keyboard.copy())
