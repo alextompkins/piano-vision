@@ -1,12 +1,11 @@
 from pathlib import Path
 
 import cv2
-from .processors import BlackKeyFinder, KeyboardBounder, ChangeTracker, HandFinder
+from .processors import KeysManager, KeyboardBounder, ChangeTracker, HandFinder
 from .video_reader import VideoReader
 from .helpers import apply_mask
 
 processors = [
-	# BlackKeyFinder(),
 	# ChangeTracker(),
 ]
 
@@ -22,6 +21,7 @@ class PianoVision:
 		self.bounds = [0, 0, 0, 0]
 
 		self.hand_finder = HandFinder()
+		self.keys_manager = None
 
 	def main_loop(self):
 		with VideoReader(self.video_file) as video_reader:
@@ -52,7 +52,7 @@ class PianoVision:
 				cv2.imshow('keyboard', keyboard)
 
 				for processor in processors:
-					processor.process_frame(keyboard.copy())
+					processor.threshold(keyboard.copy())
 
 				if cv2.waitKey(30) & 0xFF == ord('q'):
 					break
@@ -61,3 +61,4 @@ class PianoVision:
 	def handle_reference_frame(self, reference_frame):
 		self.bounds = self.bounder.find_bounds(reference_frame)
 		self.reference_frame = self.bounder.get_bounded_section(reference_frame, self.bounds)
+		self.keys_manager = KeysManager(self.reference_frame)

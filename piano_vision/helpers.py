@@ -12,3 +12,10 @@ def rotate_image(image, angle):
 def apply_mask(frame, mask):
 	"""Apply binary mask to frame, return masked image."""
 	return cv2.bitwise_and(frame, frame, mask=mask)
+
+
+def mean_and_standard_dev(values, key=None):
+	if key:
+		values = tuple(map(key, values))
+
+	return np.mean(values), np.std(values)
