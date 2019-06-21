@@ -1,6 +1,8 @@
 from pathlib import Path
 
 import cv2
+import numpy as np
+
 from .processors import KeysManager, KeyboardBounder, HandFinder
 from .video_reader import VideoReader
 from .helpers import apply_mask
@@ -21,6 +23,7 @@ class PianoVision:
 
 	def main_loop(self):
 		with VideoReader(self.video_file) as video_reader:
+			paused = False
 			frame = video_reader.read_frame()
 
 			# Use initial frame file if it exists, otherwise just use first frame
@@ -42,23 +45,39 @@ class PianoVision:
 				dilated_mask = cv2.dilate(skin_mask, kernel, iterations=1)
 
 				skin = apply_mask(keyboard, dilated_mask)
-				cv2.imshow('skin', skin)
-
 				keyboard = cv2.subtract(keyboard, skin)
 
+				skin_ref = apply_mask(self.reference_frame, dilated_mask)
+				ref = cv2.subtract(self.reference_frame, skin_ref)
+
+				diff = cv2.absdiff(keyboard, ref)
+				diff = cv2.cvtColor(diff, cv2.COLOR_BGR2GRAY)
+				# diff = cv2.GaussianBlur(diff, (3, 3), 0)
+				diff = cv2.adaptiveThreshold(diff, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY_INV, 11, 10)
+				kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5))
+				diff = cv2.dilate(diff, kernel, iterations=2)
+				diff = cv2.erode(diff, kernel, iterations=2)
+
+				cv2.imshow('keyboard vs. ref', np.vstack([keyboard, ref]))
+				cv2.imshow('diff', diff)
+
+				# Show frame with keys overlaid
 				for rect in self.keys_manager.black_keys:
 					x, y, w, h = rect
 					cv2.rectangle(keyboard, (x, y), (x + w, y + h), color=(255, 0, 0), thickness=1)
 				for rect in self.keys_manager.white_keys:
 					x, y, w, h = rect
 					cv2.rectangle(keyboard, (x, y), (x + w, y + h), color=(0, 0, 255), thickness=1)
-
 				cv2.imshow('keyboard', keyboard)
 
 				# Wait for 30ms then get next frame unless quit
-				if cv2.waitKey(30) & 0xFF == ord('q'):
+				pressed_key = cv2.waitKey(30) & 0xFF
+				if pressed_key == 32:  # spacebar
+					paused = not paused
+				elif pressed_key == ord('q'):
 					break
-				frame = video_reader.read_frame()
+				if not paused:
+					frame = video_reader.read_frame()
 
 	def handle_reference_frame(self, reference_frame):
 		self.bounds = self.bounder.find_bounds(reference_frame)
