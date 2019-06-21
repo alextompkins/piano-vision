@@ -1,4 +1,4 @@
 from .black_key_finder import BlackKeyFinder
-from .piano_edge_finder import PianoEdgeFinder
+from .keyboard_bounder import KeyboardBounder
 from .change_tracker import ChangeTracker
 from .hand_finder import HandFinder
