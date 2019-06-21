@@ -1,13 +1,9 @@
 from pathlib import Path
 
 import cv2
-from .processors import KeysManager, KeyboardBounder, ChangeTracker, HandFinder
+from .processors import KeysManager, KeyboardBounder, HandFinder
 from .video_reader import VideoReader
 from .helpers import apply_mask
-
-processors = [
-	# ChangeTracker(),
-]
 
 
 class PianoVision:
@@ -49,11 +45,17 @@ class PianoVision:
 				cv2.imshow('skin', skin)
 
 				keyboard = cv2.subtract(keyboard, skin)
+
+				for rect in self.keys_manager.black_keys:
+					x, y, w, h = rect
+					cv2.rectangle(keyboard, (x, y), (x + w, y + h), color=(255, 0, 0), thickness=1)
+				for rect in self.keys_manager.white_keys:
+					x, y, w, h = rect
+					cv2.rectangle(keyboard, (x, y), (x + w, y + h), color=(0, 0, 255), thickness=1)
+
 				cv2.imshow('keyboard', keyboard)
 
-				for processor in processors:
-					processor.threshold(keyboard.copy())
-
+				# Wait for 30ms then get next frame unless quit
 				if cv2.waitKey(30) & 0xFF == ord('q'):
 					break
 				frame = video_reader.read_frame()
@@ -62,3 +64,6 @@ class PianoVision:
 		self.bounds = self.bounder.find_bounds(reference_frame)
 		self.reference_frame = self.bounder.get_bounded_section(reference_frame, self.bounds)
 		self.keys_manager = KeysManager(self.reference_frame)
+
+		print('{} black keys found'.format(len(self.keys_manager.black_keys)))
+		print('{} white keys found'.format(len(self.keys_manager.white_keys)))

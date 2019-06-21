@@ -14,19 +14,7 @@ class KeysManager:
 
 		# Get a bounding rectangle for each black key
 		self.black_keys = tuple(map(cv2.boundingRect, key_contours))
-		print('{} black keys found'.format(len(self.black_keys)))
-		for rect in self.black_keys:
-			x, y, w, h = rect
-			cv2.rectangle(ref_frame, (x, y), (x + w, y + h), color=(255, 0, 0), thickness=1)
-
-		# Get white keys, draw rectangles
 		self.white_keys = tuple(self.find_white_keys(self.ref_frame))
-		print('{} white keys found'.format(len(self.white_keys)))
-		for rect in self.white_keys:
-			x, y, w, h = rect
-			cv2.rectangle(ref_frame, (x, y), (x + w, y + h), color=(0, 0, 255), thickness=1)
-
-		cv2.imshow('ref_frame', ref_frame)
 
 	def threshold(self, frame):
 		grey = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
