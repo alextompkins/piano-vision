@@ -77,3 +77,10 @@ def index_of_closest(data, points, dist_func=dist):
 		ioc += [indx]
 
 	return ioc
+
+
+def centre_of_contour(contour):
+	moments = cv2.moments(contour)
+	centre_x = int(moments['m10'] / moments['m00'])
+	centre_y = int(moments['m01'] / moments['m00'])
+	return centre_x, centre_y

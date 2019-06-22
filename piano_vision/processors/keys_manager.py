@@ -118,7 +118,6 @@ class KeysManager:
 			prev_key = self.black_keys[i - 1]
 			distances.append(key.x - prev_key.x)
 		mean_dist, std_dev = mean_and_standard_dev(distances)
-		print(mean_dist, std_dev)
 
 		grouped_black_keys = [[self.black_keys[0]]]
 		for i, key in tuple(enumerate(self.black_keys))[1:]:

@@ -3,9 +3,8 @@ from pathlib import Path
 import cv2
 import numpy as np
 
-from .processors import KeysManager, KeyboardBounder, HandFinder
+from .processors import KeysManager, KeyboardBounder, HandFinder, PressedKeyDetector
 from .video_reader import VideoReader
-from .helpers import apply_mask
 
 
 class PianoVision:
@@ -20,6 +19,7 @@ class PianoVision:
 
 		self.hand_finder = HandFinder()
 		self.keys_manager = None
+		self.pressed_key_detector = None
 
 	def main_loop(self):
 		with VideoReader(self.video_file) as video_reader:
@@ -40,35 +40,19 @@ class PianoVision:
 				cv2.imshow('frame', frame)
 
 				skin_mask = self.hand_finder.get_skin_mask(keyboard)
-				# Dilate again to ensure that we don't include any small bits of skin
-				kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5))
-				dilated_mask = cv2.dilate(skin_mask, kernel, iterations=1)
 
-				skin = apply_mask(keyboard, dilated_mask)
-				keyboard = cv2.subtract(keyboard, skin)
+				pressed_keys = self.pressed_key_detector.detect_pressed_keys(keyboard, skin_mask)
 
-				skin_ref = apply_mask(self.reference_frame, dilated_mask)
-				ref = cv2.subtract(self.reference_frame, skin_ref)
-
-				diff = cv2.absdiff(keyboard, ref)
-				diff = cv2.cvtColor(diff, cv2.COLOR_BGR2GRAY)
-				# diff = cv2.GaussianBlur(diff, (3, 3), 0)
-				diff = cv2.adaptiveThreshold(diff, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY_INV, 11, 10)
-				kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5))
-				diff = cv2.dilate(diff, kernel, iterations=2)
-				diff = cv2.erode(diff, kernel, iterations=2)
-
-				cv2.imshow('keyboard vs. ref', np.vstack([keyboard, ref]))
-				cv2.imshow('diff', diff)
+				cv2.imshow('keyboard vs. ref', np.vstack([keyboard, self.reference_frame]))
 
 				# Show frame with keys overlaid
 				for key in self.keys_manager.white_keys:
 					x, y, w, h = key.x, key.y, key.width, key.height
-					cv2.rectangle(keyboard, (x, y), (x + w, y + h), color=(0, 0, 255), thickness=1)
+					cv2.rectangle(keyboard, (x, y), (x + w, y + h), color=(0, 0, 255), thickness=key in pressed_keys and cv2.FILLED or 1)
 					cv2.putText(keyboard, key.note.pretty_name(), (x + 3, y + h - 10), cv2.FONT_HERSHEY_PLAIN, 0.75, color=(0, 0, 255))
 				for key in self.keys_manager.black_keys:
 					x, y, w, h = key.x, key.y, key.width, key.height
-					cv2.rectangle(keyboard, (x, y), (x + w, y + h), color=(255, 150, 75), thickness=1)
+					cv2.rectangle(keyboard, (x, y), (x + w, y + h), color=(255, 150, 75), thickness=key in pressed_keys and cv2.FILLED or 1)
 					cv2.putText(keyboard, key.note.pretty_name(), (x, y + h - 10), cv2.FONT_HERSHEY_PLAIN, 0.75, color=(255, 150, 75))
 
 				# Use morphological closing to join up hand segments
@@ -102,6 +86,7 @@ class PianoVision:
 		self.bounds = self.bounder.find_bounds(reference_frame)
 		self.reference_frame = self.bounder.get_bounded_section(reference_frame, self.bounds)
 		self.keys_manager = KeysManager(self.reference_frame)
+		self.pressed_key_detector = PressedKeyDetector(self.reference_frame, self.keys_manager)
 
 		print('{} black keys found'.format(len(self.keys_manager.black_keys)))
 		print('{} white keys found'.format(len(self.keys_manager.white_keys)))
