@@ -41,7 +41,19 @@ class PianoVision:
 
 				skin_mask = self.hand_finder.get_skin_mask(keyboard)
 
-				pressed_keys = self.pressed_key_detector.detect_pressed_keys(keyboard, skin_mask)
+				# Use morphological closing to join up hand segments
+				# TODO maybe replace this with joining nearby contours?
+				kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3))
+				skin_mask_closed = cv2.morphologyEx(skin_mask, cv2.MORPH_CLOSE, kernel, iterations=3)
+				# cv2.imshow('skin_mask_closed', skin_mask_closed)
+				hand_contours = self.hand_finder.get_hand_contours(skin_mask_closed)
+
+				fingertips = self.hand_finder.find_fingertips(hand_contours)
+				flat_fingertips = []
+				for hand in fingertips:
+					flat_fingertips.extend(hand)
+
+				pressed_keys = self.pressed_key_detector.detect_pressed_keys(keyboard, skin_mask, flat_fingertips)
 
 				cv2.imshow('keyboard vs. ref', np.vstack([keyboard, self.reference_frame]))
 
@@ -55,17 +67,10 @@ class PianoVision:
 					cv2.rectangle(keyboard, (x, y), (x + w, y + h), color=(255, 150, 75), thickness=key in pressed_keys and cv2.FILLED or 1)
 					cv2.putText(keyboard, key.note.pretty_name(), (x, y + h - 10), cv2.FONT_HERSHEY_PLAIN, 0.75, color=(255, 150, 75))
 
-				# Use morphological closing to join up hand segments
-				# TODO maybe replace this with joining nearby contours?
-				kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3))
-				skin_mask_closed = cv2.morphologyEx(skin_mask, cv2.MORPH_CLOSE, kernel, iterations=3)
-				cv2.imshow('skin_mask_closed', skin_mask_closed)
-				hand_contours = self.hand_finder.get_hand_contours(skin_mask_closed)
 				if hand_contours:
 					cv2.drawContours(keyboard, tuple(hand_contours), -1, color=(0, 255, 0), thickness=1)
 
 				# Highlight detected fingertips
-				fingertips = self.hand_finder.find_fingertips(hand_contours)
 				for hand in fingertips:
 					for finger in hand:
 						if finger:
@@ -77,6 +82,8 @@ class PianoVision:
 				pressed_key = cv2.waitKey(30) & 0xFF
 				if pressed_key == 32:  # spacebar
 					paused = not paused
+				elif pressed_key == ord('r'):
+					self.handle_reference_frame(frame)
 				elif pressed_key == ord('q'):
 					break
 				if not paused:

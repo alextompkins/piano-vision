@@ -1,7 +1,7 @@
 import cv2
 import numpy as np
 
-from piano_vision.helpers import avg_of_groups, index_of_closest, group, dist
+from piano_vision.helpers import avg_of_groups, index_of_closest, group, dist, centre_of_contour
 
 
 class HandFinder:
@@ -47,6 +47,7 @@ class HandFinder:
 
 		for i, hand_defects in enumerate(convexity_defects):
 			contour = hand_contours[i]
+			centre = centre_of_contour(contour)
 			fingertips = []
 			for j, defects in enumerate(hand_defects):
 				s = defects[0][0]
@@ -65,9 +66,9 @@ class HandFinder:
 				angle_deg = np.degrees(np.arccos((b ** 2 + c ** 2 - a ** 2) / (2 * b * c)))
 
 				if angle_deg < self.ANGLE_MAX:
-					if start not in fingertips:
+					if start not in fingertips and start[1] < centre[1]:
 						fingertips.append(start)
-					if end not in fingertips:
+					if end not in fingertips and start[1] < centre[1]:
 						fingertips.append(end)
 
 			hands.append(fingertips)

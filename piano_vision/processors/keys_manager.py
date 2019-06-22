@@ -141,9 +141,9 @@ class KeysManager:
 			if len(group) == 1:
 				key = group[0]
 				if i > 0 and (grouped_black_keys[i - 1][-1].note is not None):
-					key.note = Note(grouped_black_keys[i - 1][-1].note - 2)
+					key.note = Note((grouped_black_keys[i - 1][-1].note.value + 2) % 7)
 				elif i < len(grouped_black_keys) - 1 and (grouped_black_keys[i + 1][0].note is not None):
-					key.note = Note(grouped_black_keys[i + 1][0].note + 2)
+					key.note = Note((grouped_black_keys[i + 1][0].note.value - 2) % 7)
 
 		self.white_keys.sort(key=lambda k: k.x)
 
