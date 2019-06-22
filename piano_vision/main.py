@@ -68,6 +68,23 @@ class PianoVision:
 				for rect in self.keys_manager.white_keys:
 					x, y, w, h = rect
 					cv2.rectangle(keyboard, (x, y), (x + w, y + h), color=(0, 0, 255), thickness=1)
+
+				# Use morphological closing to join up hand segments
+				# TODO maybe replace this with joining nearby contours?
+				kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3))
+				skin_mask_closed = cv2.morphologyEx(skin_mask, cv2.MORPH_CLOSE, kernel, iterations=3)
+				cv2.imshow('skin_mask_closed', skin_mask_closed)
+				hand_contours = self.hand_finder.get_hand_contours(skin_mask_closed)
+				if hand_contours:
+					cv2.drawContours(keyboard, tuple(hand_contours), -1, color=(0, 255, 0), thickness=1)
+
+				# Highlight detected fingertips
+				fingertips = self.hand_finder.find_fingertips(hand_contours)
+				for hand in fingertips:
+					for finger in hand:
+						if finger:
+							cv2.circle(keyboard, finger, radius=5, color=(0, 255, 0), thickness=2)
+
 				cv2.imshow('keyboard', keyboard)
 
 				# Wait for 30ms then get next frame unless quit
