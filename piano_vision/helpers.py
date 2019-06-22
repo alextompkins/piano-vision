@@ -1,5 +1,6 @@
 import cv2
 import numpy as np
+import time
 from math import inf
 
 
@@ -84,3 +85,7 @@ def centre_of_contour(contour):
 	centre_x = int(moments['m10'] / moments['m00'])
 	centre_y = int(moments['m01'] / moments['m00'])
 	return centre_x, centre_y
+
+
+def epochtime_ms():
+	return int(round(time.time() * 1000))

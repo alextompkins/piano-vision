@@ -34,6 +34,9 @@ class Key:
 	def __repr__(self) -> str:
 		return 'Key(note={}, octave={}, x={})'.format(self.note, self.octave, self.x)
 
+	def __str__(self) -> str:
+		return '{}{}'.format(self.note.pretty_name(), self.octave)
+
 
 class KeysManager:
 	def __init__(self, ref_frame):

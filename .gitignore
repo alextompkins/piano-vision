@@ -112,3 +112,4 @@ venv/
 
 # Custom Ignores
 data/
+output/

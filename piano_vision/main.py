@@ -3,12 +3,18 @@ from pathlib import Path
 import cv2
 import numpy as np
 
+from .helpers import epochtime_ms
 from .processors import KeysManager, KeyboardBounder, HandFinder, PressedKeyDetector
 from .video_reader import VideoReader
 
 
 class PianoVision:
+	DELAY = 30  # delay between reading frames
+	SNAPSHOT_INTERVAL = 1000  # 1 sec
+	NUM_SNAPSHOTS = 30
+
 	def __init__(self, video_name):
+		self.video_name = video_name
 		self.video_file = 'data/{}.mp4'.format(video_name)
 		self.ref_frame_file = 'data/{}-f00.png'.format(video_name)
 
@@ -20,6 +26,9 @@ class PianoVision:
 		self.hand_finder = HandFinder()
 		self.keys_manager = None
 		self.pressed_key_detector = None
+
+		self.start_time = 0
+		self.last_snapshot_index = 0
 
 	def main_loop(self):
 		with VideoReader(self.video_file) as video_reader:
@@ -79,7 +88,7 @@ class PianoVision:
 				cv2.imshow('keyboard', keyboard)
 
 				# Wait for 30ms then get next frame unless quit
-				pressed_key = cv2.waitKey(30) & 0xFF
+				pressed_key = cv2.waitKey(self.DELAY) & 0xFF
 				if pressed_key == 32:  # spacebar
 					paused = not paused
 				elif pressed_key == ord('r'):
@@ -87,6 +96,7 @@ class PianoVision:
 				elif pressed_key == ord('q'):
 					break
 				if not paused:
+					self.take_snapshot(frame, keyboard, pressed_keys)
 					frame = video_reader.read_frame()
 
 	def handle_reference_frame(self, reference_frame):
@@ -94,6 +104,24 @@ class PianoVision:
 		self.reference_frame = self.bounder.get_bounded_section(reference_frame, self.bounds)
 		self.keys_manager = KeysManager(self.reference_frame)
 		self.pressed_key_detector = PressedKeyDetector(self.reference_frame, self.keys_manager)
+		self.start_time = epochtime_ms()
 
 		print('{} black keys found'.format(len(self.keys_manager.black_keys)))
 		print('{} white keys found'.format(len(self.keys_manager.white_keys)))
+
+	def take_snapshot(self, frame, keyboard, pressed_keys):
+		current_time = epochtime_ms()
+		time_since_start = current_time - self.start_time
+
+		if time_since_start - self.last_snapshot_index * 1000 > 1000:
+			snapshot_index = time_since_start // 1000
+			if snapshot_index < self.NUM_SNAPSHOTS:
+				cv2.imwrite(
+					'output/{}-snapshot{:02d}.png'.format(self.video_name, snapshot_index),
+					np.vstack([frame, keyboard])
+				)
+				with open('output/{}.log'.format(self.video_name), 'a+') as log:
+					line = '{}: [{}]\n'.format(snapshot_index, ', '.join([str(key) for key in pressed_keys]))
+					log.write(line)
+					print(line)
+			self.last_snapshot_index = snapshot_index
