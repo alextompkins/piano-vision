@@ -62,12 +62,14 @@ class PianoVision:
 				cv2.imshow('diff', diff)
 
 				# Show frame with keys overlaid
-				for rect in self.keys_manager.black_keys:
-					x, y, w, h = rect
-					cv2.rectangle(keyboard, (x, y), (x + w, y + h), color=(255, 0, 0), thickness=1)
-				for rect in self.keys_manager.white_keys:
-					x, y, w, h = rect
+				for key in self.keys_manager.white_keys:
+					x, y, w, h = key.x, key.y, key.width, key.height
 					cv2.rectangle(keyboard, (x, y), (x + w, y + h), color=(0, 0, 255), thickness=1)
+					cv2.putText(keyboard, key.note.pretty_name(), (x + 3, y + h - 10), cv2.FONT_HERSHEY_PLAIN, 0.75, color=(0, 0, 255))
+				for key in self.keys_manager.black_keys:
+					x, y, w, h = key.x, key.y, key.width, key.height
+					cv2.rectangle(keyboard, (x, y), (x + w, y + h), color=(255, 150, 75), thickness=1)
+					cv2.putText(keyboard, key.note.pretty_name(), (x, y + h - 10), cv2.FONT_HERSHEY_PLAIN, 0.75, color=(255, 150, 75))
 
 				# Use morphological closing to join up hand segments
 				# TODO maybe replace this with joining nearby contours?

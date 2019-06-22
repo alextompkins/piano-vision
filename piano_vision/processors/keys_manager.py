@@ -1,6 +1,38 @@
 import cv2
 import numpy as np
+from enum import Enum
 from piano_vision.helpers import mean_and_standard_dev, apply_mask
+
+
+class Note(Enum):
+	A = 0
+	A_SHARP = 0.5
+	B = 1
+	C = 2
+	C_SHARP = 2.5
+	D = 3
+	D_SHARP = 3.5
+	E = 4
+	F = 5
+	F_SHARP = 5.5
+	G = 6
+	G_SHARP = 6.5
+
+	def pretty_name(self):
+		return self.name.replace('_SHARP', '#')
+
+
+class Key:
+	def __init__(self, x, y, width, height, note=None, octave=None):
+		self.x = x
+		self.y = y
+		self.width = width
+		self.height = height
+		self.note = note
+		self.octave = octave
+
+	def __repr__(self) -> str:
+		return 'Key(note={}, octave={}, x={})'.format(self.note, self.octave, self.x)
 
 
 class KeysManager:
@@ -13,8 +45,10 @@ class KeysManager:
 		# cv2.drawContours(ref_frame, key_contours, -1, (255, 0, 255), thickness=2)
 
 		# Get a bounding rectangle for each black key
-		self.black_keys = tuple(map(cv2.boundingRect, key_contours))
-		self.white_keys = tuple(self.find_white_keys(self.ref_frame))
+		self.black_keys = list(map(lambda c: Key(*cv2.boundingRect(c)), key_contours))
+		self.white_keys = list(map(lambda r: Key(*r), self.find_white_keys(self.ref_frame)))
+
+		self.label_keys()
 
 	def threshold(self, frame):
 		grey = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
@@ -76,3 +110,63 @@ class KeysManager:
 				keys.append((start, 0, end - start, frame.shape[0]))
 
 		return keys
+
+	def label_keys(self):
+		self.black_keys.sort(key=lambda k: k.x)
+		distances = []
+		for i, key in tuple(enumerate(self.black_keys))[1:]:
+			prev_key = self.black_keys[i - 1]
+			distances.append(key.x - prev_key.x)
+		mean_dist, std_dev = mean_and_standard_dev(distances)
+		print(mean_dist, std_dev)
+
+		grouped_black_keys = [[self.black_keys[0]]]
+		for i, key in tuple(enumerate(self.black_keys))[1:]:
+			prev_key = self.black_keys[i - 1]
+			if key.x - prev_key.x < mean_dist:
+				grouped_black_keys[-1].append(key)
+			else:
+				grouped_black_keys.append([key])
+
+		for group in grouped_black_keys:
+			size = len(group)
+			if size == 2:
+				group[0].note = Note.C_SHARP
+				group[1].note = Note.D_SHARP
+			elif size == 3:
+				group[0].note = Note.F_SHARP
+				group[1].note = Note.G_SHARP
+				group[2].note = Note.A_SHARP
+
+		for i, group in enumerate(grouped_black_keys):
+			if len(group) == 1:
+				key = group[0]
+				if i > 0 and (grouped_black_keys[i - 1][-1].note is not None):
+					key.note = Note(grouped_black_keys[i - 1][-1].note - 2)
+				elif i < len(grouped_black_keys) - 1 and (grouped_black_keys[i + 1][0].note is not None):
+					key.note = Note(grouped_black_keys[i + 1][0].note + 2)
+
+		self.white_keys.sort(key=lambda k: k.x)
+
+		a1_index = None
+		for i, key in enumerate(self.white_keys):
+			for j in range(len(self.black_keys) - 1):
+				black_left = self.black_keys[j]
+				black_right = self.black_keys[j + 1]
+				if black_left.note == Note.G_SHARP and black_right.note == Note.A_SHARP and black_left.x < key.x < black_right.x:
+					key.note = Note.A
+					key.octave = 1
+					a1_index = i
+					break
+			if a1_index:
+				break
+
+		for i, key in enumerate(self.white_keys[a1_index + 1:]):
+			dist = i + 1
+			key.note = Note((Note.A.value + dist) % 7)
+			key.octave = 1 + dist // 7
+
+		for i, key in enumerate(self.white_keys[a1_index - 1::-1]):
+			dist = i + 1
+			key.note = Note((Note.A.value - dist) % 7)
+			key.octave = -(dist // 7)
