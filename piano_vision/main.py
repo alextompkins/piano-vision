@@ -9,9 +9,9 @@ from .video_reader import VideoReader
 
 
 class PianoVision:
-	DELAY = 30  # delay between reading frames
-	SNAPSHOT_INTERVAL = 1000  # 1 sec
-	NUM_SNAPSHOTS = 30
+	DELAY = 15  # delay between reading frames
+	SNAPSHOT_INTERVAL = 30  # how many frames between snapshots, videos usually 30fps
+	NUM_SNAPSHOTS = 20
 
 	def __init__(self, video_name):
 		self.video_name = video_name
@@ -27,8 +27,7 @@ class PianoVision:
 		self.keys_manager = None
 		self.pressed_key_detector = None
 
-		self.start_time = 0
-		self.last_snapshot_index = 0
+		self.frame_counter = 0
 
 	def main_loop(self):
 		with VideoReader(self.video_file) as video_reader:
@@ -70,11 +69,11 @@ class PianoVision:
 				for key in self.keys_manager.white_keys:
 					x, y, w, h = key.x, key.y, key.width, key.height
 					cv2.rectangle(keyboard, (x, y), (x + w, y + h), color=(0, 0, 255), thickness=key in pressed_keys and cv2.FILLED or 1)
-					cv2.putText(keyboard, key.note.pretty_name(), (x + 3, y + h - 10), cv2.FONT_HERSHEY_PLAIN, 0.75, color=(0, 0, 255))
+					cv2.putText(keyboard, str(key), (x + 3, y + h - 10), cv2.FONT_HERSHEY_PLAIN, 0.75, color=(0, 0, 255))
 				for key in self.keys_manager.black_keys:
 					x, y, w, h = key.x, key.y, key.width, key.height
 					cv2.rectangle(keyboard, (x, y), (x + w, y + h), color=(255, 150, 75), thickness=key in pressed_keys and cv2.FILLED or 1)
-					cv2.putText(keyboard, key.note.pretty_name(), (x, y + h - 10), cv2.FONT_HERSHEY_PLAIN, 0.75, color=(255, 150, 75))
+					cv2.putText(keyboard, str(key), (x, y + h - 10), cv2.FONT_HERSHEY_PLAIN, 0.75, color=(255, 150, 75))
 
 				if hand_contours:
 					cv2.drawContours(keyboard, tuple(hand_contours), -1, color=(0, 255, 0), thickness=1)
@@ -96,7 +95,10 @@ class PianoVision:
 				elif pressed_key == ord('q'):
 					break
 				if not paused:
-					self.take_snapshot(frame, keyboard, pressed_keys)
+					if self.frame_counter % self.SNAPSHOT_INTERVAL == 0:
+						snapshot_index = self.frame_counter // self.SNAPSHOT_INTERVAL
+						self.take_snapshot(snapshot_index, frame, keyboard, pressed_keys)
+					self.frame_counter += 1
 					frame = video_reader.read_frame()
 
 	def handle_reference_frame(self, reference_frame):
@@ -109,19 +111,13 @@ class PianoVision:
 		print('{} black keys found'.format(len(self.keys_manager.black_keys)))
 		print('{} white keys found'.format(len(self.keys_manager.white_keys)))
 
-	def take_snapshot(self, frame, keyboard, pressed_keys):
-		current_time = epochtime_ms()
-		time_since_start = current_time - self.start_time
-
-		if time_since_start - self.last_snapshot_index * 1000 > 1000:
-			snapshot_index = time_since_start // 1000
-			if snapshot_index < self.NUM_SNAPSHOTS:
-				cv2.imwrite(
-					'output/{}-snapshot{:02d}.png'.format(self.video_name, snapshot_index),
-					np.vstack([frame, keyboard])
-				)
-				with open('output/{}.log'.format(self.video_name), 'a+') as log:
-					line = '{}: [{}]\n'.format(snapshot_index, ', '.join([str(key) for key in pressed_keys]))
-					log.write(line)
-					print(line, end='')
-			self.last_snapshot_index = snapshot_index
+	def take_snapshot(self, snapshot_index, frame, keyboard, pressed_keys):
+		if snapshot_index < self.NUM_SNAPSHOTS:
+			cv2.imwrite(
+				'output/{}-snapshot{:02d}.png'.format(self.video_name, snapshot_index),
+				np.vstack([frame, keyboard])
+			)
+			with open('output/{}.log'.format(self.video_name), 'a+') as log:
+				line = '{}: [{}]\n'.format(snapshot_index, ', '.join([str(key) for key in pressed_keys]))
+				log.write(line)
+				print(line, end='')
