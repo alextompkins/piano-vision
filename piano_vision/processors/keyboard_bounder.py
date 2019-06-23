@@ -25,11 +25,13 @@ class KeyboardBounder:
 		frame = frame.copy()
 		hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
 		white = cv2.inRange(hsv, np.array([0, 0, 240]), np.array([255, 30, 255]))
+		cv2.imshow('hsv_threshold', white)
 
 		kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5))
 		white = cv2.dilate(white, kernel, iterations=3)
 		white = cv2.erode(white, kernel, iterations=5)
 		white = cv2.dilate(white, kernel, iterations=2)
+		cv2.imshow('white_region', white)
 
 		contours, hierarchy = cv2.findContours(white, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
 		largest_contour = max(contours, key=cv2.contourArea)
@@ -42,6 +44,15 @@ class KeyboardBounder:
 		min_x, max_x, min_y, max_y = bounds[0][0], bounds[1][0], bounds[0][1], bounds[2][1]
 
 		corners_pre = np.float32([[min_x + self.OFFSET, min_y], [max_x - self.OFFSET, min_y], [min_x, max_y], [max_x, max_y]])
+
+		frame_quad = frame.copy()
+		corners = [corners_pre[0], corners_pre[1], corners_pre[3], corners_pre[2]]
+		for i, corner in enumerate(corners):
+			next_corner = corners[(i + 1) % 4]
+			cv2.line(frame_quad, (corner[0], corner[1]), (next_corner[0], next_corner[1]), color=(0, 100, 220),
+					 thickness=2)
+		cv2.imshow('quadrilateral', frame_quad)
+
 		corners_post = np.float32([[0, 0], [max_x - min_x, 0], [0, max_y - min_y], [max_x - min_x, max_y - min_y]])
 		matrix = cv2.getPerspectiveTransform(corners_pre, corners_post)
 		return cv2.warpPerspective(frame, matrix, (max_x - min_x, max_y - min_y))

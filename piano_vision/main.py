@@ -3,7 +3,7 @@ from pathlib import Path
 import cv2
 import numpy as np
 
-from .helpers import epochtime_ms
+from .helpers import rotate_image
 from .processors import KeysManager, KeyboardBounder, HandFinder, PressedKeyDetector
 from .video_reader import VideoReader
 
@@ -43,10 +43,6 @@ class PianoVision:
 			# Loop through remaining frames
 			while frame is not None:
 				keyboard = self.bounder.get_bounded_section(frame, self.bounds)
-
-				cv2.rectangle(frame, self.bounds[0], self.bounds[3], (0, 255, 255), thickness=2)
-				cv2.imshow('frame', frame)
-
 				skin_mask = self.hand_finder.get_skin_mask(keyboard)
 
 				# Use morphological closing to join up hand segments
@@ -102,11 +98,14 @@ class PianoVision:
 					frame = video_reader.read_frame()
 
 	def handle_reference_frame(self, reference_frame):
+		rotation = self.bounder.find_rotation(reference_frame)
+		print('rotation: {}'.format(rotation))
+		# reference_frame = rotate_image(reference_frame, rotation)
+
 		self.bounds = self.bounder.find_bounds(reference_frame)
 		self.reference_frame = self.bounder.get_bounded_section(reference_frame, self.bounds)
 		self.keys_manager = KeysManager(self.reference_frame)
 		self.pressed_key_detector = PressedKeyDetector(self.reference_frame, self.keys_manager)
-		self.start_time = epochtime_ms()
 
 		print('{} black keys found'.format(len(self.keys_manager.black_keys)))
 		print('{} white keys found'.format(len(self.keys_manager.white_keys)))

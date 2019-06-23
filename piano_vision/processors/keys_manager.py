@@ -35,7 +35,10 @@ class Key:
 		return 'Key(note={}, octave={}, x={})'.format(self.note, self.octave, self.x)
 
 	def __str__(self) -> str:
-		return '{}{}'.format(self.note.pretty_name(), self.octave)
+		if self.note:
+			return '{}{}'.format(self.note.pretty_name(), self.octave)
+		else:
+			return '??'
 
 
 class KeysManager:
@@ -44,9 +47,12 @@ class KeysManager:
 
 		# Get black key contours
 		thresh = self.threshold(ref_frame)
-		# cv2.imshow('thresh', thresh)
+		cv2.imshow('black_keys_thresholded', thresh)
 		key_contours = self.find_key_contours(thresh)
-		# cv2.drawContours(ref_frame, key_contours, -1, (255, 0, 255), thickness=2)
+
+		display_frame = self.ref_frame.copy()
+		cv2.drawContours(display_frame, key_contours, -1, (255, 0, 255), thickness=1)
+		cv2.imshow('black_keys_contours', display_frame)
 
 		# Get a bounding rectangle for each black key
 		self.black_keys = list(map(lambda c: Key(*cv2.boundingRect(c)), key_contours))
@@ -79,6 +85,7 @@ class KeysManager:
 		cropped = frame[height - round(height / 3.5):height - round(height / 16)].copy()
 		cropped = cv2.cvtColor(cropped, cv2.COLOR_BGR2GRAY)
 		cropped = cv2.Canny(cropped, 10, 30)
+		cv2.imshow('white_key_edges_pre', cropped)
 
 		for row in cropped:
 			for col, val in enumerate(row):
@@ -88,6 +95,8 @@ class KeysManager:
 					row[col] = 0
 				if val and col < len(row) - 2 and row[col + 1]:
 					row[col] = 0
+
+		cv2.imshow('white_key_edges_post', cropped)
 
 		lines = cv2.HoughLinesP(cropped, 1, np.pi / 180, threshold=2, minLineLength=5, maxLineGap=5)
 		boundaries = {0}
@@ -164,26 +173,25 @@ class KeysManager:
 			if a1_index:
 				break
 
-		for i, key in enumerate(self.white_keys[a1_index + 1:]):
-			dist = i + 1
-			key.note = Note((Note.A.value + dist) % 7)
-			key.octave = 1 + dist // 7
+		if a1:
+			for i, key in enumerate(self.white_keys[a1_index + 1:]):
+				dist = i + 1
+				key.note = Note((Note.A.value + dist) % 7)
+				key.octave = 1 + dist // 7
 
-		for i, key in enumerate(self.white_keys[a1_index - 1::-1]):
-			dist = i + 1
-			key.note = Note((Note.A.value - dist) % 7)
-			key.octave = -(dist // 7)
+			for i, key in enumerate(self.white_keys[a1_index - 1::-1]):
+				dist = i + 1
+				key.note = Note((Note.A.value - dist) % 7)
+				key.octave = -(dist // 7)
 
-		a_sharp_1 = min(filter(lambda k: k.x > a1.x, self.black_keys), key=lambda k: k.x - a1.x)
-		a_sharp_1.octave = 1
-		a_sharp_1_index = self.black_keys.index(a_sharp_1)
+			a_sharp_1 = min(filter(lambda k: k.x > a1.x, self.black_keys), key=lambda k: k.x - a1.x)
+			a_sharp_1.octave = 1
+			a_sharp_1_index = self.black_keys.index(a_sharp_1)
 
-		print(a_sharp_1_index)
+			for i, key in tuple(enumerate(self.black_keys))[a_sharp_1_index + 1:]:
+				dist = i - a_sharp_1_index
+				key.octave = 1 + dist // 5
 
-		for i, key in tuple(enumerate(self.black_keys))[a_sharp_1_index + 1:]:
-			dist = i - a_sharp_1_index
-			key.octave = 1 + dist // 5
-
-		for i, key in tuple(enumerate(self.black_keys))[a_sharp_1_index - 1::-1]:
-			dist = a_sharp_1_index - i
-			key.octave = -(dist // 5)
+			for i, key in tuple(enumerate(self.black_keys))[a_sharp_1_index - 1::-1]:
+				dist = a_sharp_1_index - i
+				key.octave = -(dist // 5)

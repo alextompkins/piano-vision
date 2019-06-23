@@ -1,7 +1,7 @@
 from piano_vision.main import PianoVision
 
 
-VIDEO_NAME = 'call_me_maybe'
+VIDEO_NAME = 'canon_in_d'
 
 
 if __name__ == '__main__':
