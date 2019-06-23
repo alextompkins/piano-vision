@@ -5,7 +5,7 @@ from piano_vision.processors import KeysManager
 
 
 class PressedKeyDetector:
-	MIN_CONTOUR_AREA = 150
+	MIN_CONTOUR_AREA = 100
 
 	def __init__(self, ref_frame, keys_manager):
 		self.ref_frame = ref_frame
@@ -36,11 +36,11 @@ class PressedKeyDetector:
 		cv2.imshow('diff', diff)
 		cv2.imshow('frame_with_diff', frame)
 
-		pressed_keys = []
+		pressed_keys = set()
 		for centre in centres:
 			for key in [*self.keys_manager.white_keys, *self.keys_manager.black_keys]:
 				if key.x < centre[0] < key.x + key.width and key.y < centre[1] < key.y + key.height:
-					pressed_keys.append(key)
+					pressed_keys.add(key)
 
 		if fingertips:
 			pressed_keys = tuple(filter(lambda k:
