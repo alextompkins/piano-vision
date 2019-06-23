@@ -10,6 +10,7 @@ class KeyboardBounder:
 		frame = frame.copy()
 		grey = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 		edges = cv2.Canny(grey, 100, 200)
+		cv2.imshow('post_canny', edges)
 		lines = cv2.HoughLinesP(edges, 1, np.pi / 180, threshold=150, minLineLength=100, maxLineGap=50)
 
 		angles = []
@@ -18,7 +19,9 @@ class KeyboardBounder:
 				for x1, y1, x2, y2 in line:
 					angle = degrees(atan((y2 - y1) / (x2 - x1)))
 					angles.append(angle)
-					# cv2.line(frame, (x1, y1), (x2, y2), (0, 0, 255), 2)
+					cv2.line(frame, (x1, y1), (x2, y2), (0, 0, 255), 2)
+
+		cv2.imshow('hough_lines', frame)
 		return angles[int(len(angles) / 2)]  # return median angle
 
 	def find_bounds(self, frame):

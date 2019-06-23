@@ -43,6 +43,8 @@ class PianoVision:
 			# Loop through remaining frames
 			while frame is not None:
 				keyboard = self.bounder.get_bounded_section(frame, self.bounds)
+				cv2.imshow('post_warp', keyboard)
+
 				skin_mask = self.hand_finder.get_skin_mask(keyboard)
 
 				# Use morphological closing to join up hand segments
