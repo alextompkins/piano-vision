@@ -44,6 +44,7 @@ class KeysManager:
 
 		# Get black key contours
 		thresh = self.threshold(ref_frame)
+		# cv2.imshow('thresh', thresh)
 		key_contours = self.find_key_contours(thresh)
 		# cv2.drawContours(ref_frame, key_contours, -1, (255, 0, 255), thickness=2)
 
@@ -150,7 +151,7 @@ class KeysManager:
 
 		self.white_keys.sort(key=lambda k: k.x)
 
-		a1_index = None
+		a1_index, a1 = None, None
 		for i, key in enumerate(self.white_keys):
 			for j in range(len(self.black_keys) - 1):
 				black_left = self.black_keys[j]
@@ -158,7 +159,7 @@ class KeysManager:
 				if black_left.note == Note.G_SHARP and black_right.note == Note.A_SHARP and black_left.x < key.x < black_right.x:
 					key.note = Note.A
 					key.octave = 1
-					a1_index = i
+					a1_index, a1 = i, key
 					break
 			if a1_index:
 				break
@@ -172,3 +173,17 @@ class KeysManager:
 			dist = i + 1
 			key.note = Note((Note.A.value - dist) % 7)
 			key.octave = -(dist // 7)
+
+		a_sharp_1 = min(filter(lambda k: k.x > a1.x, self.black_keys), key=lambda k: k.x - a1.x)
+		a_sharp_1.octave = 1
+		a_sharp_1_index = self.black_keys.index(a_sharp_1)
+
+		print(a_sharp_1_index)
+
+		for i, key in tuple(enumerate(self.black_keys))[a_sharp_1_index + 1:]:
+			dist = i - a_sharp_1_index
+			key.octave = 1 + dist // 5
+
+		for i, key in tuple(enumerate(self.black_keys))[a_sharp_1_index - 1::-1]:
+			dist = a_sharp_1_index - i
+			key.octave = -(dist // 5)
