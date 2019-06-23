@@ -123,5 +123,5 @@ class PianoVision:
 				with open('output/{}.log'.format(self.video_name), 'a+') as log:
 					line = '{}: [{}]\n'.format(snapshot_index, ', '.join([str(key) for key in pressed_keys]))
 					log.write(line)
-					print(line)
+					print(line, end='')
 			self.last_snapshot_index = snapshot_index
