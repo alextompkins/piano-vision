@@ -22,6 +22,8 @@ class HandFinder:
 		kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5))
 		skin_mask = cv2.erode(skin_mask, kernel, iterations=1)
 		skin_mask = cv2.dilate(skin_mask, kernel, iterations=1)
+
+		cv2.imshow('skin_mask', skin_mask)
 		return skin_mask
 
 	def get_hand_contours(self, skin_mask):
@@ -32,18 +34,37 @@ class HandFinder:
 		largest_contours = filter(lambda c: cv2.contourArea(c) > self.MIN_CONTOUR_AREA, largest_contours)
 		return tuple(largest_contours)
 
-	def find_fingertips(self, hand_contours):
+	def find_fingertips(self, hand_contours, display_frame):
+		display_frame = display_frame.copy()
 		hands = []
 		convexity_defects = []
 
 		for contour in hand_contours:
 			convex_pts = cv2.convexHull(contour)
 			group_averages = np.array(avg_of_groups(group(convex_pts, self.MAX_DIST)))
+
+			# TODO remove me once no longer need debug
+			last_pt = None
+			for item in group_averages:
+				pt = (item[0][0], item[0][1])
+				cv2.circle(display_frame, (pt[0], pt[1]), 3, color=(255, 0, 0), thickness=cv2.FILLED)
+				if last_pt is not None:
+					cv2.line(display_frame, (pt[0], pt[1]), (last_pt[0], last_pt[1]), color=(255, 0, 0), thickness=1)
+				last_pt = pt
+			cv2.line(display_frame,
+				(group_averages[0][0][0], group_averages[0][0][1]),
+				(group_averages[-1][0][0], group_averages[-1][0][1]),
+				color=(255, 0, 0), thickness=1
+			)
+			# END REMOVE ME
+
 			closest_convex_pts = np.array(index_of_closest(contour, group_averages))
 			defects = cv2.convexityDefects(contour, closest_convex_pts)
 			if defects is None:
 				defects = []
 			convexity_defects.append(defects)
+
+		cv2.imshow('convex_hand', display_frame)
 
 		for i, hand_defects in enumerate(convexity_defects):
 			contour = hand_contours[i]

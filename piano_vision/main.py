@@ -51,10 +51,10 @@ class PianoVision:
 				# TODO maybe replace this with joining nearby contours?
 				kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3))
 				skin_mask_closed = cv2.morphologyEx(skin_mask, cv2.MORPH_CLOSE, kernel, iterations=3)
-				# cv2.imshow('skin_mask_closed', skin_mask_closed)
+				cv2.imshow('skin_mask_closed', skin_mask_closed)
 				hand_contours = self.hand_finder.get_hand_contours(skin_mask_closed)
 
-				fingertips = self.hand_finder.find_fingertips(hand_contours)
+				fingertips = self.hand_finder.find_fingertips(hand_contours, keyboard)
 				flat_fingertips = []
 				for hand in fingertips:
 					flat_fingertips.extend(hand)
