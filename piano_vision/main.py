@@ -43,7 +43,7 @@ class PianoVision:
 			# Loop through remaining frames
 			while frame is not None:
 				keyboard = self.bounder.get_bounded_section(frame, self.bounds)
-				cv2.imshow('post_warp', keyboard)
+				# cv2.imshow('post_warp', keyboard)
 
 				skin_mask = self.hand_finder.get_skin_mask(keyboard)
 
@@ -61,7 +61,7 @@ class PianoVision:
 
 				pressed_keys = self.pressed_key_detector.detect_pressed_keys(keyboard, skin_mask, flat_fingertips)
 
-				cv2.imshow('keyboard vs. ref', np.vstack([keyboard, self.reference_frame]))
+				# cv2.imshow('keyboard vs. ref', np.vstack([keyboard, self.reference_frame]))
 
 				# Show frame with keys overlaid
 				for key in self.keys_manager.white_keys:

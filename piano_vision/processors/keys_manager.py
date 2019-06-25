@@ -47,12 +47,12 @@ class KeysManager:
 
 		# Get black key contours
 		thresh = self.threshold(ref_frame)
-		cv2.imshow('black_keys_thresholded', thresh)
+		# cv2.imshow('black_keys_thresholded', thresh)
 		key_contours = self.find_key_contours(thresh)
 
 		display_frame = self.ref_frame.copy()
 		cv2.drawContours(display_frame, key_contours, -1, (255, 0, 255), thickness=1)
-		cv2.imshow('black_keys_contours', display_frame)
+		# cv2.imshow('black_keys_contours', display_frame)
 
 		# Get a bounding rectangle for each black key
 		self.black_keys = list(map(lambda c: Key(*cv2.boundingRect(c)), key_contours))
@@ -85,7 +85,7 @@ class KeysManager:
 		cropped = frame[height - round(height / 3.5):height - round(height / 16)].copy()
 		cropped = cv2.cvtColor(cropped, cv2.COLOR_BGR2GRAY)
 		cropped = cv2.Canny(cropped, 10, 30)
-		cv2.imshow('white_key_edges_pre', cropped)
+		# cv2.imshow('white_key_edges_pre', cropped)
 
 		for row in cropped:
 			for col, val in enumerate(row):
@@ -96,7 +96,7 @@ class KeysManager:
 				if val and col < len(row) - 2 and row[col + 1]:
 					row[col] = 0
 
-		cv2.imshow('white_key_edges_post', cropped)
+		# cv2.imshow('white_key_edges_post', cropped)
 
 		lines = cv2.HoughLinesP(cropped, 1, np.pi / 180, threshold=2, minLineLength=5, maxLineGap=5)
 		boundaries = {0}

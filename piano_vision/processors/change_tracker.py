@@ -9,4 +9,4 @@ class ChangeTracker:
 		# Apply background subtractor
 		grey = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 		fg_mask = self.bg_subtractor.apply(grey)
-		cv2.imshow('fg_mask', fg_mask)
+		# cv2.imshow('fg_mask', fg_mask)

@@ -37,8 +37,8 @@ class PressedKeyDetector:
 
 		for centre in centres:
 			cv2.circle(frame, (centre[0], centre[1]), radius=5, color=(0, 0, 255), thickness=cv2.FILLED)
-		cv2.imshow('diff', diff)
-		cv2.imshow('frame_with_diff', frame)
+		# cv2.imshow('diff', diff)
+		# cv2.imshow('frame_with_diff', frame)
 
 		pressed_keys = set()
 		for centre in centres:

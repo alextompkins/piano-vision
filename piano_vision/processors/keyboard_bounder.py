@@ -10,7 +10,7 @@ class KeyboardBounder:
 		frame = frame.copy()
 		grey = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 		edges = cv2.Canny(grey, 100, 200)
-		cv2.imshow('post_canny', edges)
+		# cv2.imshow('post_canny', edges)
 		lines = cv2.HoughLinesP(edges, 1, np.pi / 180, threshold=150, minLineLength=100, maxLineGap=50)
 
 		angles = []
@@ -21,20 +21,20 @@ class KeyboardBounder:
 					angles.append(angle)
 					cv2.line(frame, (x1, y1), (x2, y2), (0, 0, 255), 2)
 
-		cv2.imshow('hough_lines', frame)
+		# cv2.imshow('hough_lines', frame)
 		return angles[int(len(angles) / 2)]  # return median angle
 
 	def find_bounds(self, frame):
 		frame = frame.copy()
 		hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
 		white = cv2.inRange(hsv, np.array([0, 0, 240]), np.array([255, 30, 255]))
-		cv2.imshow('hsv_threshold', white)
+		# cv2.imshow('hsv_threshold', white)
 
 		kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5))
 		white = cv2.dilate(white, kernel, iterations=3)
 		white = cv2.erode(white, kernel, iterations=5)
 		white = cv2.dilate(white, kernel, iterations=2)
-		cv2.imshow('white_region', white)
+		# cv2.imshow('white_region', white)
 
 		contours, hierarchy = cv2.findContours(white, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
 		largest_contour = max(contours, key=cv2.contourArea)
@@ -54,7 +54,7 @@ class KeyboardBounder:
 			next_corner = corners[(i + 1) % 4]
 			cv2.line(frame_quad, (corner[0], corner[1]), (next_corner[0], next_corner[1]), color=(0, 100, 220),
 					 thickness=2)
-		cv2.imshow('quadrilateral', frame_quad)
+		# cv2.imshow('quadrilateral', frame_quad)
 
 		corners_post = np.float32([[0, 0], [max_x - min_x, 0], [0, max_y - min_y], [max_x - min_x, max_y - min_y]])
 		matrix = cv2.getPerspectiveTransform(corners_pre, corners_post)
