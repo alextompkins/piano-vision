@@ -1,6 +1,9 @@
-def main(song_name):
-	with open('ground_truths/{}'.format(song_name)) as ground_truth_file:
-		with open('output/{}.log'.format(song_name)) as output_file:
+import sys
+
+
+def main(song, log):
+	with open('ground_truths/{}'.format(song)) as ground_truth_file:
+		with open(log) as output_file:
 			correct = 0
 			false_positive = 0
 			false_negative = 0
@@ -26,4 +29,14 @@ def main(song_name):
 
 
 if __name__ == '__main__':
-	main('canon_in_d')
+	if len(sys.argv) <= 1:
+		print('Usage: calc_accuracy.py song_name [log_name]')
+		sys.exit(1)
+	song_name = sys.argv[1]
+
+	if len(sys.argv) >= 3:
+		log_name = 'output/{}-{}.log'.format(song_name, sys.argv[2])
+	else:
+		log_name = 'output/{}.log'.format(song_name)
+
+	main(song_name, log_name)
