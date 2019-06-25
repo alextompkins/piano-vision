@@ -47,13 +47,11 @@ class PressedKeyDetector:
 					pressed_keys.add(key)
 
 		if fingertips:
-			pressed_keys = tuple(filter(lambda k:
-				any(
-					map(
-						lambda f: k.x < f[0] < k.x + k.width and k.y < f[1] < k.y + k.height,
-						fingertips
-					)),
-				pressed_keys))
+			pressed_keys = tuple(filter(
+				# Filter pressed keys to only those which contain a fingertip
+				lambda k: any(map(lambda f: self.fingertip_within_key(f, k), fingertips)),
+				pressed_keys
+			))
 
 		self.process_sticky_pressed_changes(pressed_keys)
 		return self.currently_pressed
@@ -95,6 +93,10 @@ class PressedKeyDetector:
 					self.to_be_removed[key] = self.STICKINESS
 		for key in delete_after:
 			self.currently_pressed.remove(key)
+
+	@staticmethod
+	def fingertip_within_key(fingertip, key):
+		return key.x < fingertip[0] < (key.x + key.width) and key.y < fingertip[1] < (key.y + key.height)
 
 	@staticmethod
 	def get_diff(frame, ref):
