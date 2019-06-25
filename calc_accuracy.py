@@ -21,11 +21,15 @@ def main(song, log):
 				false_negative += len(truth.difference(output))
 				total_truths += len(truth)
 
+			precision = correct / (correct + false_negative)
+			recall = correct / (correct + false_positive)
+			f1 = 2 * (precision * recall) / (precision + recall)
 			print('Correct: {}'.format(correct))
 			print('False Negatives: {}'.format(false_negative))
 			print('False Positives: {}'.format(false_positive))
-			print('Precision: {:.2f}%'.format(correct / (correct + false_negative) * 100))
-			print('Recall: {:.2f}%'.format(correct / (correct + false_positive) * 100))
+			print('Precision: {:.2f}%'.format(precision * 100))
+			print('Recall: {:.2f}%'.format(recall * 100))
+			print('F1 score: {:.3f}'.format(f1))
 
 
 if __name__ == '__main__':
