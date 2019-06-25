@@ -6,10 +6,14 @@ from piano_vision.processors import KeysManager
 
 class PressedKeyDetector:
 	MIN_CONTOUR_AREA = 100
+	STICKINESS = 2
 
 	def __init__(self, ref_frame, keys_manager):
 		self.ref_frame = ref_frame
 		self.keys_manager: KeysManager = keys_manager
+		self.currently_pressed = set()
+		self.to_be_added = dict()
+		self.to_be_removed = dict()
 
 	def detect_pressed_keys(self, frame, skin_mask, fingertips=None):
 		frame = frame.copy()
@@ -51,7 +55,46 @@ class PressedKeyDetector:
 					)),
 				pressed_keys))
 
-		return pressed_keys
+		self.process_sticky_pressed_changes(pressed_keys)
+		return self.currently_pressed
+
+	def process_sticky_pressed_changes(self, pressed_keys):
+		# If a key was going to be added but is no longer pressed, remove from to_be_added
+		delete_after = []
+		for key in self.to_be_added:
+			if key not in pressed_keys:
+				delete_after.append(key)
+		for key in delete_after:
+			del self.to_be_added[key]
+
+		for key in pressed_keys:
+			# If a key was going to be removed but is now pressed again, delete from to_be_removed
+			if key in self.to_be_removed:
+				del self.to_be_removed[key]
+			if key not in self.currently_pressed:
+				# If the key is set to be added and is still pressed, reduce its counter by 1
+				if key in self.to_be_added:
+					self.to_be_added[key] -= 1
+					# Key is ready to be added
+					if self.to_be_added[key] == 0:
+						del self.to_be_added[key]
+						self.currently_pressed.add(key)
+				# Otherwise if we haven't seen this key before, add it in future
+				else:
+					self.to_be_added[key] = self.STICKINESS
+
+		delete_after = []
+		for key in self.currently_pressed:
+			if key not in pressed_keys:
+				if key in self.to_be_removed:
+					self.to_be_removed[key] -= 1
+					if self.to_be_removed[key] == 0:
+						del self.to_be_removed[key]
+						delete_after.append(key)
+				else:
+					self.to_be_removed[key] = self.STICKINESS
+		for key in delete_after:
+			self.currently_pressed.remove(key)
 
 	@staticmethod
 	def get_diff(frame, ref):
