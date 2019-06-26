@@ -23,6 +23,7 @@ class PressedKeyDetector:
 
 		skin = apply_mask(frame, dilated_mask)
 		frame = cv2.subtract(frame, skin)
+		# cv2.imshow('skin_masked_out', frame)
 
 		skin_ref = apply_mask(self.ref_frame, dilated_mask)
 		ref = cv2.subtract(self.ref_frame, skin_ref)
@@ -103,12 +104,12 @@ class PressedKeyDetector:
 		diff = cv2.cvtColor(diff, cv2.COLOR_BGR2GRAY)
 		# diff = cv2.GaussianBlur(diff, (3, 3), 0)
 		diff = cv2.adaptiveThreshold(diff, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY_INV, 11, 10)
-		cv2.imshow('binary_diff', diff)
+		# cv2.imshow('binary_diff', diff)
 		kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5))
 		diff = cv2.dilate(diff, kernel, iterations=2)
 		diff = cv2.erode(diff, kernel, iterations=2)
 		kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (10, 10))
 		diff = cv2.morphologyEx(diff, cv2.MORPH_OPEN, kernel, iterations=1)
 		diff = cv2.morphologyEx(diff, cv2.MORPH_CLOSE, kernel, iterations=1)
-		cv2.imshow('morphed_diff', diff)
+		# cv2.imshow('morphed_diff', diff)
 		return diff

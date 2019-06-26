@@ -23,7 +23,7 @@ class HandFinder:
 		skin_mask = cv2.erode(skin_mask, kernel, iterations=1)
 		skin_mask = cv2.dilate(skin_mask, kernel, iterations=1)
 
-		cv2.imshow('skin_mask', skin_mask)
+		# cv2.imshow('skin_mask', skin_mask)
 		return skin_mask
 
 	def get_hand_contours(self, skin_mask):

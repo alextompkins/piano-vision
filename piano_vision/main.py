@@ -44,6 +44,7 @@ class PianoVision:
 
 			# Loop through remaining frames
 			while frame is not None:
+				cv2.imshow('frame', frame)
 				keyboard = self.bounder.get_bounded_section(frame, self.bounds)
 				# cv2.imshow('post_warp', keyboard)
 
